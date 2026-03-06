@@ -4,12 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import Optional, List
 import os
+import time
+import logging
 from datetime import datetime
 
 from ..models.schemas import (
     ChatRequest, ChatResponse, ConversationResponse,
     MessageResponse, ConversationCreate, FileUploadResponse,
-    EnhancedChatRequest, EnhancedChatResponse
+    EnhancedChatRequest, EnhancedChatResponse, RAGSearchResult
 )
 from ..services.conversation_service import ConversationService
 from ..services.media_service import media_service
@@ -18,8 +20,10 @@ from ..services.rag_service import RAGService, get_rag_service
 from ..services.llm_service import LLMService, get_llm_service
 from ..core.database import get_db
 from ..core.config import settings
+from ..graph.graph import run as graph_run
 from fastapi.responses import FileResponse
-import time
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -29,13 +33,39 @@ async def chat(
     db: Session = Depends(get_db)
 ):
     """
-    处理聊天消息
+    处理聊天消息（LangGraph 路由）
+
+    将用户消息路由至 ShoppingAgent StateGraph：
+    - search/compare 意图 → 混合检索（BM25 + FAISS + BGE Reranker）+ 生成回复
+    - chat 意图         → 直接生成回复（跳过检索）
     """
-    conversation_service = ConversationService(db)
     try:
-        response = await conversation_service.process_chat_message(request)
-        return response
+        # 用 conversation_id 作为 LangGraph 的 thread_id，保持会话连续性
+        thread_id = str(request.conversation_id) if request.conversation_id else f"anon-{int(time.time())}"
+
+        # 调用 LangGraph 状态机
+        result = await graph_run(
+            query=request.message,
+            db=db,
+            thread_id=thread_id,
+            knowledge_base_ids=None,  # 全库检索；如需限定知识库可在此传入 ID 列表
+        )
+
+        final_response = result.get("final_response") or "抱歉，我暂时无法回答这个问题。"
+        logger.info(
+            f"[/chat] intent={result.get('intent')} "
+            f"confidence={result.get('confidence_score', 0):.2f} "
+            f"docs={len(result.get('retrieved_docs', []))}"
+        )
+
+        return ChatResponse(
+            response=final_response,
+            conversation_id=request.conversation_id or 0,
+            message_id=0,
+            model_used=settings.text_model,
+        )
     except Exception as e:
+        logger.exception("[/chat] LangGraph 执行异常")
         raise HTTPException(status_code=500, detail=str(e))
 
 # 暂时注释掉文件上传路由，因为FastAPI需要python-multipart来处理File参数
@@ -197,145 +227,65 @@ async def enhanced_chat(
     db: Session = Depends(get_db)
 ):
     """
-    增强的聊天接口，支持记忆、RAG、多Agent协作
+    增强聊天接口（LangGraph 路由）
+
+    在基础 /chat 之上额外返回：检索文档列表、置信度、意图等调试字段。
+    knowledge_base_ids 传入时限定 RAG 检索范围。
     """
     start_time = time.time()
 
     try:
-        # 初始化服务
-        memory_service = get_memory_service(db)
-        rag_service = get_rag_service(db)
-        llm_service = get_llm_service(db)
-        conversation_service = ConversationService(db)
+        thread_id = str(request.conversation_id) if request.conversation_id else f"anon-{int(time.time())}"
 
-        # 获取或创建对话
-        if not request.conversation_id:
-            conversation = conversation_service.create_conversation(
-                type('', (), {"title": request.message[:50] + "..."})(),
-                None
-            )
-            request.conversation_id = conversation.id
+        # 仅在 use_rag=True 时透传 knowledge_base_ids
+        kb_ids = request.knowledge_base_ids if request.use_rag else None
 
-        # 构建增强的上下文
-        context_parts = []
-        memory_used = False
-        rag_results = []
-        agent_collaboration_result = None
+        result = await graph_run(
+            query=request.message,
+            db=db,
+            thread_id=thread_id,
+            knowledge_base_ids=kb_ids,
+        )
 
-        # 1. 记忆检索
-        if request.use_memory:
-            memory_context = await memory_service.get_relevant_context(
-                request.message, f"session_{request.conversation_id}"
-            )
-            if memory_context.get("relevant_memories"):
-                context_parts.append("Memory Context:")
-                for mem in memory_context["relevant_memories"]:
-                    context_parts.append(f"- {mem['content']} (Type: {mem['type']}, Importance: {mem['importance']})")
-                memory_used = True
+        final_response = result.get("final_response") or "抱歉，我暂时无法回答这个问题。"
+        retrieved_docs  = result.get("retrieved_docs", [])
+        confidence      = result.get("confidence_score", 0.0)
+        intent          = result.get("intent", "chat")
 
-        # 2. RAG检索
-        if request.use_rag and request.knowledge_base_ids:
-            from ..models.schemas import RAGSearchRequest
-            rag_search = RAGSearchRequest(
-                query=request.message,
-                knowledge_base_ids=request.knowledge_base_ids,
-                limit=5,
-                threshold=0.7
-            )
-            rag_results = await rag_service.search_knowledge_base(rag_search)
-            if rag_results:
-                context_parts.append("Knowledge Base Context:")
-                for i, result in enumerate(rag_results, 1):
-                    context_parts.append(f"[{i}] {result.content}")
-
-        # 3. 多Agent协作
-        if request.agent_collaboration and request.agents:
-            from ..models.schemas import AgentCollaborationCreate, CollaborationType
-            from ..services.agent_service import AgentService, get_agent_service
-
-            agent_service = get_agent_service(db)
-            collab_request = AgentCollaborationCreate(
-                session_id=f"session_{request.conversation_id}",
-                collaboration_type=request.collaboration_type or CollaborationType.SEQUENTIAL,
-                participants=request.agents,
-                workflow={
-                    "main_task": {
-                        "query": request.message,
-                        "context": "\n".join(context_parts) if context_parts else ""
-                    }
-                },
-                task_data={"query": request.message}
-            )
-
-            collab_result = await agent_service.create_collaboration(collab_request)
-            agent_collaboration_result = {
-                "collaboration_id": collab_result.id,
-                "type": collab_result.collaboration_type,
-                "participants": collab_result.participants,
-                "status": collab_result.status
-            }
-
-        # 4. 构建最终提示
-        enhanced_prompt = request.message
-        if context_parts:
-            enhanced_prompt = f"""
-Context Information:
-{chr(10).join(context_parts)}
-
-User Question: {request.message}
-
-Please provide a comprehensive response considering all the context provided above.
-"""
-
-        # 5. 调用LLM
-        llm_response = await llm_service.chat_completion([
-            {"role": "system", "content": "You are an AI assistant with access to memory, knowledge bases, and multi-agent collaboration. Use all available context to provide the best possible response."},
-            {"role": "user", "content": enhanced_prompt}
-        ], model=request.model, max_tokens=request.max_tokens, temperature=request.temperature)
-
-        # 6. 存储到记忆系统
-        if request.use_memory:
-            from ..models.schemas import MemoryCreate
-            user_memory = MemoryCreate(
-                content=request.message,
-                memory_type="episodic",
-                importance_score=0.6,
-                metadata={"source": "user_input", "conversation_id": request.conversation_id}
-            )
-            await memory_service.create_memory(user_memory)
-
-            assistant_memory = MemoryCreate(
-                content=llm_response["content"],
-                memory_type="episodic",
-                importance_score=0.8,
-                metadata={"source": "assistant_response", "conversation_id": request.conversation_id}
-            )
-            await memory_service.create_memory(assistant_memory)
-
-        # 7. 更新工作记忆
-        await memory_service.update_working_memory(
-            type('', (), {
-                "session_id": f"session_{request.conversation_id}",
-                "context_data": {"last_query": request.message, "last_response": llm_response["content"]},
-                "expires_in": 3600  # 1小时
-            })()
+        logger.info(
+            f"[/chat/enhanced] intent={intent} confidence={confidence:.2f} "
+            f"docs={len(retrieved_docs)}"
         )
 
         processing_time = time.time() - start_time
 
+        # 将检索文档映射为 RAGSearchResult 格式
+        rag_results_out = [
+            RAGSearchResult(
+                content=doc.get("content", ""),
+                document_id=doc.get("document_id", 0),
+                chunk_index=doc.get("chunk_index", 0),
+                score=float(doc.get("rerank_score") or doc.get("retrieval_score") or 0.0),
+                metadata={"document_name": doc.get("document_name", ""),
+                          "retrieval_source": doc.get("retrieval_source", "")},
+            )
+            for doc in retrieved_docs
+        ]
+
         return EnhancedChatResponse(
-            response=llm_response["content"],
-            conversation_id=request.conversation_id,
-            message_id=0,  # 实际应该从数据库获取
-            model_used=request.model,
-            tokens_used=llm_response.get("tokens_used"),
-            memory_used=memory_used,
-            rag_results=rag_results,
-            agent_collaboration=agent_collaboration_result,
-            processing_time=processing_time
+            response=final_response,
+            conversation_id=request.conversation_id or 0,
+            message_id=0,
+            model_used=settings.text_model,
+            tokens_used=None,
+            memory_used=len(retrieved_docs) > 0,
+            rag_results=rag_results_out,
+            agent_collaboration={"intent": intent, "confidence": confidence},
+            processing_time=processing_time,
         )
 
     except Exception as e:
+        logger.exception("[/chat/enhanced] LangGraph 执行异常")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/chat/extract-memory")
