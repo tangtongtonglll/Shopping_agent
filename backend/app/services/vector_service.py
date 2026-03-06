@@ -9,12 +9,12 @@ import pickle
 import os
 from typing import List, Dict, Any, Optional, Tuple
 try:
-    from sentence_transformers import SentenceTransformer
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
+    from FlagEmbedding import FlagModel
+    FLAG_EMBEDDING_AVAILABLE = True
 except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    print("⚠️  sentence-transformers未安装，向量搜索功能将不可用。请运行: pip install sentence-transformers")
-    SentenceTransformer = None
+    FLAG_EMBEDDING_AVAILABLE = False
+    print("⚠️  FlagEmbedding未安装，向量搜索功能将不可用。请运行: pip install FlagEmbedding")
+    FlagModel = None
 from sqlalchemy.orm import Session
 from ..models.models import Memory, DocumentChunk, WorkingMemory
 from ..core.config import settings
@@ -22,14 +22,14 @@ import json
 
 class VectorService:
     def __init__(self):
-        # 初始化embedding模型
-        if SENTENCE_TRANSFORMERS_AVAILABLE and SentenceTransformer:
-            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-            self.embedding_dim = 384  # all-MiniLM-L6-v2的维度
+        # 初始化embedding模型 (BAAI/bge-large-zh, 1024维)
+        if FLAG_EMBEDDING_AVAILABLE and FlagModel:
+            self.embedding_model = FlagModel('BAAI/bge-large-zh', use_fp16=False)
+            self.embedding_dim = 1024  # bge-large-zh的维度
         else:
             self.embedding_model = None
-            self.embedding_dim = 384
-            print("⚠️  向量搜索功能不可用，请安装 sentence-transformers")
+            self.embedding_dim = 1024
+            print("⚠️  向量搜索功能不可用，请安装 FlagEmbedding")
 
         # 创建向量存储目录
         self.vector_store_dir = os.path.join(settings.upload_dir, "vector_store")
@@ -52,29 +52,34 @@ class VectorService:
         if os.path.exists(memory_index_path):
             self.memory_index = faiss.read_index(memory_index_path)
         else:
-            self.memory_index = faiss.IndexFlatIP(self.embedding_dim)  # 内积相似度
+            self.memory_index = faiss.IndexFlatL2(self.embedding_dim)
 
         # 文档向量索引
         document_index_path = os.path.join(self.vector_store_dir, "document_index.faiss")
         if os.path.exists(document_index_path):
             self.document_index = faiss.read_index(document_index_path)
         else:
-            self.document_index = faiss.IndexFlatIP(self.embedding_dim)
+            self.document_index = faiss.IndexFlatL2(self.embedding_dim)
 
-    def text_to_embedding(self, text: str) -> np.ndarray:
-        """将文本转换为embedding向量"""
+    def text_to_embedding(self, text: str, is_query: bool = False) -> np.ndarray:
+        """将文本转换为embedding向量。
+        is_query=True 时使用 encode_queries（为检索查询添加指令前缀）。
+        """
         if not self.embedding_model:
-            raise ValueError("embedding模型未初始化，请安装sentence-transformers")
-        embedding = self.embedding_model.encode(text, convert_to_numpy=True)
-        # 归一化向量（用于内积相似度计算）
+            raise ValueError("embedding模型未初始化，请安装 FlagEmbedding")
+        if is_query:
+            embedding = self.embedding_model.encode_queries([text])[0]
+        else:
+            embedding = self.embedding_model.encode([text])[0]
+        # 归一化向量
         embedding = embedding / np.linalg.norm(embedding)
         return embedding.astype(np.float32)
 
     def batch_text_to_embeddings(self, texts: List[str]) -> np.ndarray:
         """批量将文本转换为embedding向量"""
         if not self.embedding_model:
-            raise ValueError("embedding模型未初始化，请安装sentence-transformers")
-        embeddings = self.embedding_model.encode(texts, convert_to_numpy=True)
+            raise ValueError("embedding模型未初始化，请安装 FlagEmbedding")
+        embeddings = self.embedding_model.encode(texts)
         # 归一化向量
         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
         embeddings = embeddings / norms
@@ -163,11 +168,11 @@ class VectorService:
     def search_similar_memories(self, query: str, limit: int = 10, threshold: float = 0.7,
                                user_id: Optional[int] = None, memory_type: Optional[str] = None,
                                db: Session = None) -> List[Dict[str, Any]]:
-        """搜索相似记忆"""
+        """搜索相似记忆。threshold 为 L2 距离上限，越小越严格（归一化向量下 0~2）。"""
         if not FAISS_AVAILABLE or not self.memory_index or not self.embedding_model:
             return []
         try:
-            query_embedding = self.text_to_embedding(query)
+            query_embedding = self.text_to_embedding(query, is_query=True)
 
             # 在FAISS中搜索
             distances, indices = self.memory_index.search(query_embedding.reshape(1, -1), limit)
@@ -176,7 +181,8 @@ class VectorService:
             memory_mapping = self._load_id_mapping("memory")
 
             for i, (distance, idx) in enumerate(zip(distances[0], indices[0])):
-                if idx == -1 or distance < threshold:
+                # IndexFlatL2 返回 L2 距离（越小越相似），超过 threshold 则跳过
+                if idx == -1 or distance > threshold:
                     continue
 
                 memory_id = memory_mapping.get(idx)
@@ -203,7 +209,8 @@ class VectorService:
                             "metadata": memory.meta_data or {}
                         })
 
-            return sorted(results, key=lambda x: x["score"], reverse=True)
+            # L2 距离越小越相似，升序排列
+            return sorted(results, key=lambda x: x["score"])
 
         except Exception as e:
             print(f"Error searching memories: {e}")
@@ -212,11 +219,11 @@ class VectorService:
     def search_similar_documents(self, query: str, limit: int = 5, threshold: float = 0.7,
                                 knowledge_base_ids: Optional[List[int]] = None,
                                 db: Session = None) -> List[Dict[str, Any]]:
-        """搜索相似文档"""
+        """搜索相似文档。threshold 为 L2 距离上限，越小越严格（归一化向量下 0~2）。"""
         if not FAISS_AVAILABLE or not self.document_index or not self.embedding_model:
             return []
         try:
-            query_embedding = self.text_to_embedding(query)
+            query_embedding = self.text_to_embedding(query, is_query=True)
 
             # 在FAISS中搜索
             distances, indices = self.document_index.search(query_embedding.reshape(1, -1), limit)
@@ -225,7 +232,8 @@ class VectorService:
             document_mapping = self._load_id_mapping("document")
 
             for i, (distance, idx) in enumerate(zip(distances[0], indices[0])):
-                if idx == -1 or distance < threshold:
+                # IndexFlatL2 返回 L2 距离（越小越相似），超过 threshold 则跳过
+                if idx == -1 or distance > threshold:
                     continue
 
                 chunk_id = document_mapping.get(idx)
@@ -250,7 +258,8 @@ class VectorService:
                             "document_name": chunk.document.original_name
                         })
 
-            return sorted(results, key=lambda x: x["score"], reverse=True)
+            # L2 距离越小越相似，升序排列
+            return sorted(results, key=lambda x: x["score"])
 
         except Exception as e:
             print(f"Error searching documents: {e}")
@@ -315,7 +324,7 @@ class VectorService:
             return
         try:
             # 重新初始化索引
-            self.memory_index = faiss.IndexFlatIP(self.embedding_dim)
+            self.memory_index = faiss.IndexFlatL2(self.embedding_dim)
 
             # 重新添加所有记忆
             memories = db.query(Memory).filter(Memory.embedding.isnot(None)).all()

@@ -47,7 +47,7 @@ class Settings(BaseSettings):
 
     # Vector and Memory Configuration
     redis_url: Optional[str] = None
-    embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_model: str = "BAAI/bge-large-zh"
     vector_db_path: str = "./vector_store"
     vector_db_type: Optional[str] = "faiss"
 
