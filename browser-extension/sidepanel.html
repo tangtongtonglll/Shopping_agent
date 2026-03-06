@@ -1,15 +1,219 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Shopping Assistant</title>
+  <title>AI 购物助手</title>
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
-  <div id="root"></div>
-  <script src="api.js"></script>
-  <script src="sidepanel.js"></script>
+<div class="app" id="root">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="brand-icon">🛍️</span>
+      <span class="brand-name">AI 购物助手</span>
+      <span class="engine-badge">LangGraph</span>
+    </div>
+    <div class="header-actions">
+      <span class="status-dot" id="statusDot" title="检查连接中…"></span>
+      <button class="hbtn" id="refreshBtn" title="重新提取商品信息">↺</button>
+      <button class="hbtn" id="settingsBtn" title="设置">⚙</button>
+    </div>
+  </header>
+
+  <!-- ── Product Banner ──────────────────────────────────────── -->
+  <div class="product-banner hidden" id="productBanner">
+    <img class="product-thumb" id="bannerImg" src="" alt="">
+    <div class="banner-info">
+      <div class="banner-name" id="bannerName"></div>
+      <div class="banner-meta">
+        <span class="banner-price" id="bannerPrice"></span>
+        <span class="banner-platform" id="bannerPlatform"></span>
+      </div>
+    </div>
+    <button class="banner-ask-btn" id="bannerAskBtn" title="询问 AI">💬</button>
+  </div>
+
+  <!-- ── Tabs ────────────────────────────────────────────────── -->
+  <nav class="tabs">
+    <button class="tab active" data-pane="chat">
+      <span>💬</span><span class="tab-lbl">对话</span>
+    </button>
+    <button class="tab" data-pane="analysis">
+      <span>📊</span><span class="tab-lbl">分析</span>
+    </button>
+    <button class="tab" data-pane="price">
+      <span>💰</span><span class="tab-lbl">比价</span>
+    </button>
+    <button class="tab" data-pane="visual">
+      <span>🖼️</span><span class="tab-lbl">图搜</span>
+    </button>
+  </nav>
+
+  <!-- ── Panes ───────────────────────────────────────────────── -->
+  <main class="content">
+
+    <!-- ▸ 对话 Pane ──────────────────────────────────────────── -->
+    <section class="pane active" id="pane-chat">
+      <!-- Quick prompts shown only when product detected -->
+      <div class="quick-chips hidden" id="quickChips">
+        <button class="chip" data-prompt="值得买吗？请综合分析价格、品质和性价比给出建议">💡 值得买吗</button>
+        <button class="chip" data-prompt="这个商品有哪些潜在风险？请详细说明">⚠️ 有什么风险</button>
+        <button class="chip" data-prompt="这个定价合理吗？和同类产品相比如何？">💰 价格合理吗</button>
+        <button class="chip" data-prompt="有没有性价比更高的替代品推荐？">🔄 找替代品</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages" id="messages">
+        <div class="welcome-card">
+          <div class="welcome-avatar">🤖</div>
+          <div class="welcome-body">
+            <strong>你好，我是 AI 购物助手！</strong>
+            <p>搭载 <b>LangGraph</b> 智能路由引擎，自动识别问题类型：</p>
+            <ul>
+              <li>🔍 商品搜索 → 混合检索（BM25 + 向量 + 重排序）</li>
+              <li>⚖️ 多品对比 → 结构化对比矩阵</li>
+              <li>💬 闲聊问答 → 直接回答</li>
+            </ul>
+            <p class="welcome-hint">打开购物网站时，我会自动获取商品信息。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="typing-indicator hidden" id="typingIndicator">
+        <span></span><span></span><span></span>
+      </div>
+
+      <!-- Input area -->
+      <div class="input-area">
+        <div class="input-box">
+          <button class="input-icon-btn" id="imgChatBtn" title="发送图片进行搜索">📷</button>
+          <input type="file" id="imgChatFile" accept="image/*" style="display:none">
+          <textarea id="chatInput" placeholder="问我关于这件商品的任何问题…" rows="1"></textarea>
+          <button class="send-btn" id="sendBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+        <div class="input-opts">
+          <label class="toggle-wrap">
+            <input type="checkbox" id="ragToggle" checked>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-lbl">RAG 检索增强</span>
+          </label>
+          <span class="model-badge">GLM-4</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ▸ 分析 Pane ──────────────────────────────────────────── -->
+    <section class="pane" id="pane-analysis">
+      <div class="pane-toolbar">
+        <button class="btn-primary full-w" id="analyzeBtn">⚡ 一键全面分析</button>
+      </div>
+      <div id="analysisResult">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <p>点击上方按钮，AI 将从多维度分析当前商品</p>
+          <div class="feature-grid">
+            <div class="feature-item">✓ 综合评估</div>
+            <div class="feature-item">✓ 购买建议</div>
+            <div class="feature-item">✓ 价格分析</div>
+            <div class="feature-item">✓ 风险预警</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ▸ 比价 Pane ──────────────────────────────────────────── -->
+    <section class="pane" id="pane-price">
+      <div class="search-bar">
+        <input type="text" id="priceSearchInput" placeholder="输入商品名称进行比价…">
+        <button class="btn-primary" id="priceSearchBtn">比价</button>
+      </div>
+
+      <div class="price-block">
+        <div class="block-title">🏪 跨平台比价</div>
+        <div id="comparisonResult">
+          <div class="empty-state-sm">搜索商品名称，获取多平台价格对比</div>
+        </div>
+      </div>
+
+      <div class="price-block" id="historyBlock" style="display:none">
+        <div class="block-title collapsible-hdr" id="historyToggle">
+          <span>📈 价格历史（30天）</span>
+          <span class="chevron" id="historyChevron">▼</span>
+        </div>
+        <div id="historyBody">
+          <div id="priceHistoryResult"></div>
+        </div>
+      </div>
+
+      <div class="price-block">
+        <div class="block-title collapsible-hdr" id="alertToggle">
+          <span>🔔 降价预警</span>
+          <span class="chevron" id="alertChevron">▼</span>
+        </div>
+        <div id="alertBody">
+          <div class="alert-form">
+            <input type="number" id="targetPriceInput" placeholder="目标价格（元）" min="0" step="0.01">
+            <button class="btn-primary" id="setAlertBtn">设置预警</button>
+          </div>
+          <div id="alertResult"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ▸ 图搜 Pane ──────────────────────────────────────────── -->
+    <section class="pane" id="pane-visual">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="visualFileInput" accept="image/*" class="file-hidden">
+        <label for="visualFileInput" class="upload-label">
+          <div class="upload-icon-lg">📷</div>
+          <div class="upload-title">以图搜同款</div>
+          <div class="upload-hint">点击选择图片或将图片拖放到此处<br>支持 JPG / PNG / WEBP</div>
+        </label>
+      </div>
+
+      <div class="visual-preview hidden" id="visualPreview">
+        <img class="preview-img" id="previewImg" src="" alt="预览图">
+        <div class="preview-actions">
+          <button class="btn-primary" id="doVisualSearchBtn">🔍 搜索同款</button>
+          <button class="btn-ghost" id="clearVisualBtn">✕ 清除</button>
+        </div>
+      </div>
+
+      <div id="visualResult"></div>
+    </section>
+
+  </main>
+
+  <!-- ── Settings Overlay ────────────────────────────────────── -->
+  <div class="overlay hidden" id="settingsOverlay">
+    <div class="settings-panel">
+      <div class="settings-hdr">
+        <span>⚙️ 设置</span>
+        <button class="hbtn" id="closeSettingsBtn">✕</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-row">
+          <label>后端地址</label>
+          <input type="text" id="apiUrlInput" placeholder="http://localhost:8000">
+        </div>
+        <div class="settings-row">
+          <label>自动提取商品</label>
+          <input type="checkbox" id="autoExtractToggle">
+        </div>
+      </div>
+      <button class="btn-primary full-w" id="saveSettingsBtn">保存设置</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="api.js"></script>
+<script src="sidepanel.js"></script>
 </body>
 </html>
-
