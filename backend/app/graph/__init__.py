@@ -7,6 +7,7 @@ from .nodes import (
     generator_node,
     human_review_node,
 )
+from .graph import build_graph, get_sqlite_checkpointer, run
 
 __all__ = [
     "ShoppingAgentState",
@@ -15,4 +16,7 @@ __all__ = [
     "comparator_node",
     "generator_node",
     "human_review_node",
+    "build_graph",
+    "get_sqlite_checkpointer",
+    "run",
 ]
