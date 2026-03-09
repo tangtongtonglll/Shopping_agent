@@ -231,12 +231,23 @@ async def run(
         }
     }
 
+    _B = "\033[1m"; _R = "\033[0m"; _C = "\033[36m"; _G = "\033[32m"
+    print(f"\n{_C}{_B}{'─'*60}{_R}")
+    print(f"{_C}{_B}  🛒 ShoppingAgent Flow  thread={thread_id}{_R}")
+    print(f"{_C}  Query: {query[:80]}{_R}")
+    print(f"{_C}{_B}{'─'*60}{_R}")
     logger.info(f"[Graph] 开始执行 | thread_id={thread_id} | query='{query[:60]}'")
 
     result: ShoppingAgentState = await graph.ainvoke(initial_state, config=config)
 
+    intent     = result.get('intent', '?')
+    confidence = result.get('confidence_score', 0)
+    docs_count = len(result.get('retrieved_docs', []))
+    print(f"{_G}{_B}{'─'*60}{_R}")
+    print(f"{_G}{_B}  ✅ Flow 完成  intent={intent}  confidence={confidence:.2f}  docs={docs_count}{_R}")
+    print(f"{_G}{_B}{'─'*60}{_R}\n")
     logger.info(
-        f"[Graph] 执行完成 | intent={result.get('intent')} "
-        f"confidence={result.get('confidence_score', 0):.2f}"
+        f"[Graph] 执行完成 | intent={intent} "
+        f"confidence={confidence:.2f}"
     )
     return result

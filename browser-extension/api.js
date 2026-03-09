@@ -163,7 +163,7 @@ class APIClient {
   }
 
   async getPriceHistory(productId, days = 30) {
-    return this.request(`/api/price-tracker/history/${productId}?days=${days}`);
+    return this.request(`/api/price-tracker/analysis/${productId}?days=${days}`);
   }
 
   async predictPrice(productId) {
@@ -185,15 +185,22 @@ class APIClient {
     });
   }
 
-  // Visual search
-  async visualSearch(imageData) {
-    const formData = new FormData();
-    formData.append('image', imageData);
-    
-    return this.request('/api/visual-search/search', {
+  // Visual search（将文件转为 base64 后调用 /search/base64 接口）
+  async visualSearch(imageFile) {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // 去掉 "data:image/xxx;base64," 前缀
+        const b64 = reader.result.split(',')[1];
+        resolve(b64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(imageFile);
+    });
+
+    return this.request('/api/visual-search/search/base64', {
       method: 'POST',
-      body: formData,
-      headers: {}, // Let browser automatically set Content-Type
+      body: { image_data: base64, max_results: 10 },
     });
   }
 

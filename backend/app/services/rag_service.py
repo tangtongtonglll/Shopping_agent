@@ -5,14 +5,18 @@ import json
 import asyncio
 from datetime import datetime
 try:
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-    from langchain.schema import Document as LangchainDocument
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_core.documents import Document as LangchainDocument
     LANGCHAIN_AVAILABLE = True
 except ImportError:
-    LANGCHAIN_AVAILABLE = False
-    print("⚠️  langchain未安装，RAG功能将受限。请运行: pip install langchain")
-    RecursiveCharacterTextSplitter = None
-    LangchainDocument = None
+    try:
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+        from langchain.schema import Document as LangchainDocument
+        LANGCHAIN_AVAILABLE = True
+    except ImportError:
+        LANGCHAIN_AVAILABLE = False
+        RecursiveCharacterTextSplitter = None
+        LangchainDocument = None
 from ..models.models import KnowledgeBase, Document, DocumentChunk
 from ..models.schemas import (
     KnowledgeBaseCreate, KnowledgeBaseResponse, DocumentUploadRequest,

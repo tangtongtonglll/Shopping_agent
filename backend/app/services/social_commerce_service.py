@@ -464,7 +464,7 @@ class SocialCommerceService:
             related_content = []
 
             # 搜索相关的社交内容
-            search_terms = [product.name, product.brand, product.category]
+            search_terms = [product.title, product.brand, product.category]
 
             for term in search_terms:
                 for platform_name, platform in self.platforms.items():
@@ -520,7 +520,7 @@ class SocialCommerceService:
             基于以下信息，为用户生成个性化的社交推荐内容：
 
             商品信息：
-            - 名称：{product.name}
+            - 名称：{product.title}
             - 品牌：{product.brand}
             - 类别：{product.category}
             - 价格：{product.price}
@@ -647,7 +647,7 @@ class SocialCommerceService:
                 "target_audience": target_audience,
                 "platform_content": platform_content,
                 "product_info": {
-                    "name": product.name,
+                    "name": product.title,
                     "brand": product.brand,
                     "category": product.category,
                     "price": product.price
@@ -686,7 +686,7 @@ class SocialCommerceService:
             prompt = f"""
             为{platform}平台生成商品推广内容：
 
-            商品：{product.name}
+            商品：{product.title}
             品牌：{product.brand}
             价格：{product.price}
             类别：{product.category}

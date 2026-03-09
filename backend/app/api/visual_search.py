@@ -194,7 +194,7 @@ async def create_visual_search_index(
         for product in products:
             product_dict = {
                 "product_id": product.product_id,
-                "name": product.name,
+                "name": product.title,
                 "brand": product.brand,
                 "category": product.category,
                 "price": product.price,

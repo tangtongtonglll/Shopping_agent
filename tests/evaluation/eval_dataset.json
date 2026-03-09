@@ -1,0 +1,894 @@
+{
+  "meta": {
+    "version": "1.0",
+    "total": 50,
+    "intent_distribution": {
+      "FUZZY_SEARCH": 16,
+      "PRODUCT_SEARCH": 16,
+      "COMPARISON": 10,
+      "CHITCHAT": 8
+    },
+    "generated_at": "2026-03-08T14:09:07",
+    "description": "Shopping Agent 评测数据集。覆盖 4 种意图：CHITCHAT / PRODUCT_SEARCH / FUZZY_SEARCH / COMPARISON。expected_skus 为 Amazon 数据库中的真实 product_id。",
+    "scoring_guide": {
+      "hit@1": "expected_skus[0] 在检索结果 Top-1 中",
+      "hit@3": "expected_skus 中任意一个在 Top-3 中",
+      "hit@10": "expected_skus 中任意一个在 Top-10 中",
+      "intent_acc": "预测意图 == expected_intent 的比例"
+    }
+  },
+  "cases": [
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "推荐一款防晒指数高、不油腻、适合日常的防晒霜",
+      "expected_skus": [
+        "amazon_B00G6KAQIE",
+        "amazon_B09H61PN51"
+      ],
+      "expected_keywords": [
+        "sunscreen"
+      ],
+      "notes": "语义搜索，预期召回 [sunscreen] 类商品",
+      "id": 1
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "N\\C 化妆刷 有货吗",
+      "expected_skus": [
+        "amazon_B08NW67Z2T"
+      ],
+      "expected_keywords": [
+        "n\\c",
+        "makeup brush"
+      ],
+      "product_ref": {
+        "title": "3 Pack Loufas Back Scrubber for Shower, Soft Nylon Mesh Body Brush with Long Handle, Exfoliating Luffa Loufa Sponge for Women and Mens. (Beige)",
+        "brand": "N\\C",
+        "price": 8.66,
+        "rating": 4.0
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 2
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "比较 Nails Inc 和 Wet 'n' Wild 这两款指甲油/美甲的优缺点",
+      "expected_skus": [
+        "amazon_B00NH1I50Q",
+        "amazon_B00GVIM4ZY"
+      ],
+      "expected_keywords": [
+        "nail polish",
+        "nails inc",
+        "wet 'n' wild"
+      ],
+      "product_ref": [
+        {
+          "title": "Nails Inc London Nail Polish in Porchester Square .47 oz by Nails Inc. London",
+          "brand": "Nails Inc",
+          "price": 26.95,
+          "rating": 3.3
+        },
+        {
+          "title": "WET N WILD Fergie Heavy Metal Nail Polish - Mazel Tov Madness",
+          "brand": "Wet 'n' Wild",
+          "price": 6.48,
+          "rating": 3.0
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款指甲油/美甲产品",
+      "id": 3
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "搜索 House of Armáf 香水，预算大概 $25",
+      "expected_skus": [
+        "amazon_B07R7YWQKW"
+      ],
+      "expected_keywords": [
+        "house of armáf",
+        "perfume"
+      ],
+      "product_ref": {
+        "title": "Armáf Täg Hïm Colognė For Men 3.4 oz Eau De Toilette Spray",
+        "brand": "House of Armáf",
+        "price": 24.84,
+        "rating": 5.0
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 4
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "你好，你能帮我做什么？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 5
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "Snozzle Pro 吹风机 有货吗",
+      "expected_skus": [
+        "amazon_B07X8Z9W22"
+      ],
+      "expected_keywords": [
+        "snozzle pro",
+        "hair dryer"
+      ],
+      "product_ref": {
+        "title": "SnozzlePro Universal Hair Dryer Nozzle Adapter - Fits Xtava Black Orchid Diffuser, Replacement Concentrators and Blow Dryers with a Diameter 1.5 Inch to 2.25 Inch - Prevents Attachment Pop-Offs",
+        "brand": "Snozzle Pro",
+        "price": 14.99,
+        "rating": 4.2
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 6
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "Benefit face cream 和 OxygenCeuticals face cream 哪个更适合日常使用？",
+      "expected_skus": [
+        "amazon_B07DM64VNT",
+        "amazon_B0777QHNLR"
+      ],
+      "expected_keywords": [
+        "face cream",
+        "benefit",
+        "oxygenceuticals"
+      ],
+      "product_ref": [
+        {
+          "title": "Benefit KA BROW Cream Gel Brow Color with Brush 3.0 g/0.1 oz Shade # 4.5",
+          "brand": "Benefit",
+          "price": 24.95,
+          "rating": 4.5
+        },
+        {
+          "title": "OxygenCeuticals 360 Eye Perfection Duo, Advanced Anti-Aging Eye Treatment Set, 2 Products, Eye Cream 35ml/18 oz & Eye Gel Serum 15ml/0.5 oz, Visibly Reduce Under-Eye Bags, Puffiness, Wrinkles, Dark Circles, Fine Lines & Crow's Feet, for Women & Men",
+          "brand": "OxygenCeuticals",
+          "price": 88.0,
+          "rating": 4.1
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款面霜产品",
+      "id": 7
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "帮我比较一下 Miny Beauty Cosmetics 和 tweexy 的指甲油/美甲",
+      "expected_skus": [
+        "amazon_B07DFSN36Q",
+        "amazon_B0777W6C4X"
+      ],
+      "expected_keywords": [
+        "nail polish",
+        "miny beauty cosmetics",
+        "tweexy"
+      ],
+      "product_ref": [
+        {
+          "title": "Deco Miami Namaste Nail Polish (By The Pool Nail Polish)",
+          "brand": "Miny Beauty Cosmetics",
+          "price": 4.99,
+          "rating": 4.7
+        },
+        {
+          "title": "tweexy Wearable Nail Polish Holder Ring, Fingernail Painting Tool, Manicure and Pedicure Accessories (Bonbon Pink & Spa Green, 2-Pack)",
+          "brand": "tweexy",
+          "price": 14.99,
+          "rating": 4.6
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款指甲油/美甲产品",
+      "id": 8
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "有没有适合敏感肌、无香精的面霜？",
+      "expected_skus": [
+        "amazon_B07KFGWC8S",
+        "amazon_B0058WE96Q",
+        "amazon_B0777QHNLR"
+      ],
+      "expected_keywords": [
+        "face cream"
+      ],
+      "notes": "语义搜索，预期召回 [face cream] 类商品",
+      "id": 9
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "推荐一款遮盖黑眼圈效果好的遮瑕笔或遮瑕膏",
+      "expected_skus": [
+        "amazon_B08L3QKHRJ",
+        "amazon_B08CVGMFRB"
+      ],
+      "expected_keywords": [
+        "concealer"
+      ],
+      "notes": "语义搜索，预期召回 [concealer] 类商品",
+      "id": 10
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "帮我比较一下 essie 和 tweexy 的指甲油/美甲",
+      "expected_skus": [
+        "amazon_B0754HBCRK",
+        "amazon_B0777W6C4X"
+      ],
+      "expected_keywords": [
+        "nail polish",
+        "essie",
+        "tweexy"
+      ],
+      "product_ref": [
+        {
+          "title": "Essie Nail Polish – Fall 2017 Collection – mixtaupe – 13.5ml/0.46oz",
+          "brand": "essie",
+          "price": 12.5,
+          "rating": 4.7
+        },
+        {
+          "title": "tweexy Wearable Nail Polish Holder Ring, Fingernail Painting Tool, Manicure and Pedicure Accessories (Bonbon Pink & Spa Green, 2-Pack)",
+          "brand": "tweexy",
+          "price": 14.99,
+          "rating": 4.6
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款指甲油/美甲产品",
+      "id": 11
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "有没有清爽不黏腻、快速吸收的全身身体乳？",
+      "expected_skus": [
+        "amazon_B0711L86FJ",
+        "amazon_B01LE3GULY",
+        "amazon_B01N9I42I0"
+      ],
+      "expected_keywords": [
+        "body lotion"
+      ],
+      "notes": "语义搜索，预期召回 [body lotion] 类商品",
+      "id": 12
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "你会推荐美妆产品吗？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 13
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "帮我找一下 EYE MAJIC INSTANT EYESHADOW – INSTANT BE",
+      "expected_skus": [
+        "amazon_B07JVW6ZTF"
+      ],
+      "expected_keywords": [
+        "eyemajic",
+        "eyeshadow"
+      ],
+      "product_ref": {
+        "title": "EYE MAJIC INSTANT EYESHADOW – INSTANT BEAUTY PROFFESIONAL MAKEUP IN 10 SECOND (5 Pair Pack, Matte 107 - Romanesque)",
+        "brand": "eyeMajic",
+        "price": 14.9,
+        "rating": 4.0
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 14
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "我想找一款显色度高、持妆时间长的哑光口红",
+      "expected_skus": [
+        "amazon_B072JG9WW8",
+        "amazon_B09B2RNHHH",
+        "amazon_B004H8ZKWE"
+      ],
+      "expected_keywords": [
+        "lipstick"
+      ],
+      "notes": "语义搜索，预期召回 [lipstick] 类商品",
+      "id": 15
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "Bath & Body Works perfume 和 Tiffany & Co. perfume 哪个更适合日常使用？",
+      "expected_skus": [
+        "amazon_B094GZW7KD",
+        "amazon_B07YL4L81W"
+      ],
+      "expected_keywords": [
+        "perfume",
+        "bath & body works",
+        "tiffany & co."
+      ],
+      "product_ref": [
+        {
+          "title": "Belize Tropical Cabana 8 fl oz. Fragrance Mist, 10 fl oz.Shower Gel , 8 Fl o z., Body Lotion",
+          "brand": "Bath & Body Works",
+          "price": 69.75,
+          "rating": 4.8
+        },
+        {
+          "title": "TIFFANY & LOVE by Tiffany, EAU DE PARFUM SPRAY 1.7 OZ",
+          "brand": "Tiffany & Co.",
+          "price": 87.14,
+          "rating": 4.6
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款香水产品",
+      "id": 16
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "推荐一套适合初学者的化妆刷，刷毛柔软不掉毛",
+      "expected_skus": [
+        "amazon_B01KGIFJSS",
+        "amazon_B07TDN9PCN",
+        "amazon_B08NW67Z2T"
+      ],
+      "expected_keywords": [
+        "makeup brush"
+      ],
+      "notes": "语义搜索，预期召回 [makeup brush] 类商品",
+      "id": 17
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "想买一个快干、控温、不伤发质的吹风机",
+      "expected_skus": [
+        "amazon_B07X8Z9W22"
+      ],
+      "expected_keywords": [
+        "hair dryer"
+      ],
+      "notes": "语义搜索，预期召回 [hair dryer] 类商品",
+      "id": 18
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "搜索 Magick Botanicals 护发素，预算大概 $23",
+      "expected_skus": [
+        "amazon_B0011DN60Q"
+      ],
+      "expected_keywords": [
+        "magick botanicals",
+        "conditioner"
+      ],
+      "product_ref": {
+        "title": "Magick Botanicals Conditioner for Thinning Hair Fragrance Free - 16 fl oz",
+        "brand": "Magick Botanicals",
+        "price": 22.89,
+        "rating": 3.8
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 19
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "网购美妆产品需要注意什么？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 20
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "需要一款遮瑕力强但妆感自然的粉底液，油皮适用",
+      "expected_skus": [
+        "amazon_B09JC2GTVD",
+        "amazon_B009WI1UKA",
+        "amazon_B07GS93SMP"
+      ],
+      "expected_keywords": [
+        "foundation"
+      ],
+      "notes": "语义搜索，预期召回 [foundation] 类商品",
+      "id": 21
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "有没有防水、防晕染、增长睫毛效果好的睫毛膏？",
+      "expected_skus": [
+        "amazon_B07LD3M88C"
+      ],
+      "expected_keywords": [
+        "mascara"
+      ],
+      "notes": "语义搜索，预期召回 [mascara] 类商品",
+      "id": 22
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "什么是清洁型护肤品？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 23
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "我在找一款颜色持久不容易掉的指甲油",
+      "expected_skus": [
+        "amazon_B07PFH92HN",
+        "amazon_B0777W6C4X",
+        "amazon_B0182HILM6"
+      ],
+      "expected_keywords": [
+        "nail polish"
+      ],
+      "notes": "语义搜索，预期召回 [nail polish] 类商品",
+      "id": 24
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "VIROCHEMISTRY 的香水多少钱？",
+      "expected_skus": [
+        "amazon_B07X1TK3VS"
+      ],
+      "expected_keywords": [
+        "virochemistry",
+        "perfume"
+      ],
+      "product_ref": {
+        "title": "VIROCHEMISTRY Pheromones For Women (Elixir) - Elegant, Ultra Strength Organic Fragrance Body Perfume (1 Fl. Oz)",
+        "brand": "VIROCHEMISTRY",
+        "price": 29.8,
+        "rating": 3.7
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 25
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "我要买 ETUDE Big Cover Skin Fit Concealer PRO (",
+      "expected_skus": [
+        "amazon_B08CVGMFRB"
+      ],
+      "expected_keywords": [
+        "etude house",
+        "concealer"
+      ],
+      "product_ref": {
+        "title": "ETUDE Big Cover Skin Fit Concealer PRO (# Neutral Peach) (21AD) | Long-Lasting Closely Adhesive Cover Like Real Skin | Smooth and Perfect Makeup | Hides Dark Circles, Redness",
+        "brand": "Etude House",
+        "price": 12.0,
+        "rating": 4.3
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 26
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "我要买 Be Spontaneous by Avon Eau De Toilette S",
+      "expected_skus": [
+        "amazon_B000VMGAD8"
+      ],
+      "expected_keywords": [
+        "avon",
+        "perfume"
+      ],
+      "product_ref": {
+        "title": "Be Spontaneous by Avon Eau De Toilette Spray 1.7 oz",
+        "brand": "AVON",
+        "price": 45.0,
+        "rating": 4.0
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 27
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "Vanilla by Body Fantasies, 3 Pack 8 和 VIROCHEMISTRY Pheromones For Women 哪个更好用？",
+      "expected_skus": [
+        "amazon_B072N95X6P",
+        "amazon_B07X1TK3VS"
+      ],
+      "expected_keywords": [
+        "perfume",
+        "parfums de coeur",
+        "virochemistry"
+      ],
+      "product_ref": [
+        {
+          "title": "Vanilla by Body Fantasies, 3 Pack 8 oz Fragrance Body Spray for Women",
+          "brand": "Parfums De Coeur",
+          "price": 27.99,
+          "rating": 4.7
+        },
+        {
+          "title": "VIROCHEMISTRY Pheromones For Women (Elixir) - Elegant, Ultra Strength Organic Fragrance Body Perfume (1 Fl. Oz)",
+          "brand": "VIROCHEMISTRY",
+          "price": 29.8,
+          "rating": 3.7
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款香水产品",
+      "id": 28
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "帮我搜索 QNT foot mask",
+      "expected_skus": [
+        "amazon_B07NBLP4GJ"
+      ],
+      "expected_keywords": [
+        "qnt",
+        "foot mask"
+      ],
+      "product_ref": {
+        "title": "Callus Pro Cordless Rechargeable Handheld Pedicure Tool for Rough Callused & Dead Skin",
+        "brand": "QNT",
+        "price": 97.0,
+        "rating": 4.5
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 29
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "帮我找 Smith & Nephew 品牌的面霜，评分比较高的",
+      "expected_skus": [
+        "amazon_B01IAE1UVA"
+      ],
+      "expected_keywords": [
+        "smith & nephew",
+        "face cream"
+      ],
+      "product_ref": {
+        "title": "Secura Moisturizing Cream [59431900] 3 oz ( Pack of 6)",
+        "brand": "Smith & Nephew",
+        "price": 21.53,
+        "rating": 4.4
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 30
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "Nails Inc London Nail Polish in Por（$27）和 Tate's The Natural Miracle - Odorle（$16），该怎么选？",
+      "expected_skus": [
+        "amazon_B00NH1I50Q",
+        "amazon_B0182HILM6"
+      ],
+      "expected_keywords": [
+        "nail polish",
+        "nails inc",
+        "tate's the natural miracle"
+      ],
+      "product_ref": [
+        {
+          "title": "Nails Inc London Nail Polish in Porchester Square .47 oz by Nails Inc. London",
+          "brand": "Nails Inc",
+          "price": 26.95,
+          "rating": 3.3
+        },
+        {
+          "title": "Tate's The Natural Miracle - Odorless Nail Polish Remover 5 oz (Set of 2)",
+          "brand": "Tate's The Natural Miracle",
+          "price": 16.02,
+          "rating": 4.1
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款指甲油/美甲产品",
+      "id": 31
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "同样是指甲油/美甲，Dare to Wear 和 tweexy 各有什么特点？",
+      "expected_skus": [
+        "amazon_B01M0WMHLS",
+        "amazon_B0777W6C4X"
+      ],
+      "expected_keywords": [
+        "nail polish",
+        "dare to wear",
+        "tweexy"
+      ],
+      "product_ref": [
+        {
+          "title": "LeChat Dare To Wear Nail Polish - (Plumeria)",
+          "brand": "Dare to Wear",
+          "price": 9.5,
+          "rating": 4.5
+        },
+        {
+          "title": "tweexy Wearable Nail Polish Holder Ring, Fingernail Painting Tool, Manicure and Pedicure Accessories (Bonbon Pink & Spa Green, 2-Pack)",
+          "brand": "tweexy",
+          "price": 14.99,
+          "rating": 4.6
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款指甲油/美甲产品",
+      "id": 32
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "皮肤很干，想找一款深层保湿的面霜",
+      "expected_skus": [
+        "amazon_B07KFGWC8S",
+        "amazon_B0058WE96Q",
+        "amazon_B0777QHNLR"
+      ],
+      "expected_keywords": [
+        "face cream"
+      ],
+      "notes": "语义搜索，预期召回 [face cream] 类商品",
+      "id": 33
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "Annie mini pocket small manclub combo br 这款产品怎么样？",
+      "expected_skus": [
+        "amazon_B00WNAUEXI"
+      ],
+      "expected_keywords": [
+        "annie",
+        "makeup brush"
+      ],
+      "product_ref": {
+        "title": "Annie mini pocket small manclub combo brush #2113 - SOFT-, soft bristles, natural bristles, boar bristles, hair comb, hair brush, long hair, short hair,",
+        "brand": "Annie",
+        "price": 3.99,
+        "rating": 3.9
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 34
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "护肤和美妆有什么区别？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 35
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "Effadaine 的面霜多少钱？",
+      "expected_skus": [
+        "amazon_B0052EOS70"
+      ],
+      "expected_keywords": [
+        "effadaine",
+        "face cream"
+      ],
+      "product_ref": {
+        "title": "Effadiane Cream 30ml",
+        "brand": "Effadaine",
+        "price": 15.0,
+        "rating": 5.0
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 36
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "有没有 Salerm 品牌的洗发水？",
+      "expected_skus": [
+        "amazon_B07W5S82Y5"
+      ],
+      "expected_keywords": [
+        "salerm",
+        "shampoo"
+      ],
+      "product_ref": {
+        "title": "Salerm HI REPAIR Shampoo & Mask Conditioner DUO SET, High Repair Damaged Hair for Strong, Full Bodied Shine Softness Masque (250 ml (9 oz) + 250 ml (9 oz) - DUO KIT)",
+        "brand": "Salerm",
+        "price": 33.72,
+        "rating": 4.5
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 37
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "美妆产品的保质期一般是多久？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 38
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "比较 Sally Hansen 和 Nails Inc 这两款指甲油/美甲的优缺点",
+      "expected_skus": [
+        "amazon_B00454W6XG",
+        "amazon_B00NH1I50Q"
+      ],
+      "expected_keywords": [
+        "nail polish",
+        "sally hansen",
+        "nails inc"
+      ],
+      "product_ref": [
+        {
+          "title": "Sally Hansen Nail Prisms - Golden Tourmaline #29",
+          "brand": "Sally Hansen",
+          "price": 11.99,
+          "rating": 4.2
+        },
+        {
+          "title": "Nails Inc London Nail Polish in Porchester Square .47 oz by Nails Inc. London",
+          "brand": "Nails Inc",
+          "price": 26.95,
+          "rating": 3.3
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款指甲油/美甲产品",
+      "id": 39
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "有没有 Broadway Colors 品牌的面霜？",
+      "expected_skus": [
+        "amazon_B095NB5MF2"
+      ],
+      "expected_keywords": [
+        "broadway colors",
+        "face cream"
+      ],
+      "product_ref": {
+        "title": "Broadway Colors (1) Buttery Matte lip cream Summer Time - 0.2 fl oz",
+        "brand": "Broadway Colors",
+        "price": 7.99,
+        "rating": 5.0
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 40
+    },
+    {
+      "expected_intent": "COMPARISON",
+      "query": "同样是香水，Tiffany & Co. 和 AVON 各有什么特点？",
+      "expected_skus": [
+        "amazon_B07YL4L81W",
+        "amazon_B000VMGAD8"
+      ],
+      "expected_keywords": [
+        "perfume",
+        "tiffany & co.",
+        "avon"
+      ],
+      "product_ref": [
+        {
+          "title": "TIFFANY & LOVE by Tiffany, EAU DE PARFUM SPRAY 1.7 OZ",
+          "brand": "Tiffany & Co.",
+          "price": 87.14,
+          "rating": 4.6
+        },
+        {
+          "title": "Be Spontaneous by Avon Eau De Toilette Spray 1.7 oz",
+          "brand": "AVON",
+          "price": 45.0,
+          "rating": 4.0
+        }
+      ],
+      "notes": "商品对比，预期同时召回两款香水产品",
+      "id": 41
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "我头发容易出油，有没有推荐的控油洗发水？",
+      "expected_skus": [
+        "amazon_B07W5S82Y5",
+        "amazon_B07HY9QT12",
+        "amazon_B08V131NBS"
+      ],
+      "expected_keywords": [
+        "shampoo"
+      ],
+      "notes": "语义搜索，预期召回 [shampoo] 类商品",
+      "id": 42
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "推荐一款适合细软发质、增加蓬松感的洗发水",
+      "expected_skus": [
+        "amazon_B07W5S82Y5",
+        "amazon_B07HY9QT12",
+        "amazon_B08V131NBS"
+      ],
+      "expected_keywords": [
+        "shampoo"
+      ],
+      "notes": "语义搜索，预期召回 [shampoo] 类商品",
+      "id": 43
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "我想买一些美妆产品，有什么推荐吗？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 44
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "有没有提亮肤色、淡化色斑的精华产品？",
+      "expected_skus": [
+        "amazon_B077MWYVLC"
+      ],
+      "expected_keywords": [
+        "serum"
+      ],
+      "notes": "语义搜索，预期召回 [serum] 类商品",
+      "id": 45
+    },
+    {
+      "expected_intent": "CHITCHAT",
+      "query": "美妆产品怎么选择适合自己的？",
+      "expected_skus": [],
+      "expected_keywords": [],
+      "notes": "闲聊意图，AI 直接回答，无需检索商品数据库",
+      "id": 46
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "BOBBI BROWN SKIN FOUNDATION STICK .31 OZ 这款产品怎么样？",
+      "expected_skus": [
+        "amazon_B07V8GH8D7"
+      ],
+      "expected_keywords": [
+        "bobbi brown",
+        "foundation"
+      ],
+      "product_ref": {
+        "title": "BOBBI BROWN SKIN FOUNDATION STICK .31 OZ / 9 g - COOL NATURAL",
+        "brand": "Bobbi Brown",
+        "price": 24.99,
+        "rating": 3.7
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 47
+    },
+    {
+      "expected_intent": "PRODUCT_SEARCH",
+      "query": "查一查 Ryxskin sunscreen 的相关产品",
+      "expected_skus": [
+        "amazon_B09H61PN51"
+      ],
+      "expected_keywords": [
+        "ryxskin",
+        "sunscreen"
+      ],
+      "product_ref": {
+        "title": "Ryxskin Ryx Skin Invisible Sunshield Sunscreen Anti-Blue Light Technology SPF 40 PA+++, 50ml, Small",
+        "brand": "Ryxskin",
+        "price": 13.0,
+        "rating": 3.8
+      },
+      "notes": "精确搜索，预期命中该商品",
+      "id": 48
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "我喜欢清新花香调的香水，适合春天日常使用",
+      "expected_skus": [
+        "amazon_B072N95X6P",
+        "amazon_B07YL4L81W",
+        "amazon_B07ZHGNPZM"
+      ],
+      "expected_keywords": [
+        "perfume"
+      ],
+      "notes": "语义搜索，预期召回 [perfume] 类商品",
+      "id": 49
+    },
+    {
+      "expected_intent": "FUZZY_SEARCH",
+      "query": "想找一款抗衰老、改善细纹的精华液",
+      "expected_skus": [
+        "amazon_B077MWYVLC"
+      ],
+      "expected_keywords": [
+        "serum"
+      ],
+      "notes": "语义搜索，预期召回 [serum] 类商品",
+      "id": 50
+    }
+  ]
+}

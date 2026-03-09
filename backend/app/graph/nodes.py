@@ -29,6 +29,23 @@ from ..services.llm_service import get_llm_service
 
 logger = logging.getLogger(__name__)
 
+# ── 终端彩色输出工具 ─────────────────────────────────────────────────────────
+_C = {
+    "reset":  "\033[0m",
+    "bold":   "\033[1m",
+    "cyan":   "\033[36m",
+    "green":  "\033[32m",
+    "yellow": "\033[33m",
+    "red":    "\033[31m",
+    "blue":   "\033[34m",
+    "purple": "\033[35m",
+    "gray":   "\033[90m",
+}
+
+def _flow(icon: str, node: str, msg: str, color: str = "cyan") -> None:
+    c = _C.get(color, "")
+    print(f"  {c}{_C['bold']}[{node}]{_C['reset']} {icon} {msg}")
+
 # --------------------------------------------------------------------------- #
 # 内部工具                                                                     #
 # --------------------------------------------------------------------------- #
@@ -102,6 +119,7 @@ async def router_node(
     }
     """
     user_text = _last_human_text(state)
+    _flow("🔀", "router_node", f"用户输入: '{user_text[:80]}'", "cyan")
     logger.info(f"[router_node] 用户输入: '{user_text}'")
 
     system_prompt = (
@@ -138,7 +156,7 @@ async def router_node(
 
     try:
         llm = get_llm_service()
-        resp = await llm.chat_completion(messages, temperature=0.0, max_tokens=512)
+        resp = await llm.chat_completion(messages, temperature=0.0, max_tokens=2048)
         raw  = resp.get("content", "").strip()
 
         # 兼容 LLM 在 JSON 前后附加 markdown 代码块的情况
@@ -150,9 +168,17 @@ async def router_node(
         parsed   = json.loads(raw)
         intent   = parsed.get("intent", "chat")
         entities = parsed.get("entities", entities)
+        intent_colors = {"chat": "blue", "search": "green", "compare": "purple"}
+        _flow("✅", "router_node",
+              f"意图={_C['bold']}{intent}{_C['reset']}  "
+              f"商品={entities.get('products',[])}  "
+              f"类目='{entities.get('category','')}'  "
+              f"预算={entities.get('budget')}",
+              intent_colors.get(intent, "cyan"))
         logger.info(f"[router_node] 识别意图={intent}, 实体={entities}")
 
     except (json.JSONDecodeError, Exception) as exc:
+        _flow("⚠️ ", "router_node", f"意图识别失败，回退 chat: {exc}", "yellow")
         logger.warning(f"[router_node] 意图识别失败，回退到 chat: {exc}")
 
     return {
@@ -184,7 +210,9 @@ async def retriever_node(
     db     = _get_db(config)
     kb_ids = _get_kb_ids(config)
 
+    _flow("🔍", "retriever_node", "开始混合检索 (BM25 + FAISS + Reranker)", "green")
     if db is None:
+        _flow("❌", "retriever_node", "config 中未提供 db，跳过检索", "red")
         logger.error("[retriever_node] config 中未提供 db，跳过检索。")
         return {"retrieved_docs": []}
 
@@ -204,6 +232,7 @@ async def retriever_node(
 
     # 若实体为空，则直接使用用户原始输入
     query = " ".join(parts) if parts else _last_human_text(state)
+    _flow("📝", "retriever_node", f"检索 query='{query[:60]}'  kb_ids={kb_ids}", "green")
     logger.info(f"[retriever_node] 检索 query='{query}' kb_ids={kb_ids}")
 
     try:
@@ -216,8 +245,10 @@ async def retriever_node(
             dense_top_k=20,
             final_top_k=5,
         )
+        _flow("✅", "retriever_node", f"检索完成，共 {len(docs)} 条文档", "green")
         logger.info(f"[retriever_node] 检索到 {len(docs)} 条文档")
     except Exception as exc:
+        _flow("⚠️ ", "retriever_node", f"检索失败: {exc}", "yellow")
         logger.error(f"[retriever_node] 检索失败: {exc}")
         docs = []
 
@@ -255,7 +286,9 @@ async def comparator_node(
     retrieved_docs = state.get("retrieved_docs", [])
     product_names  = entities.get("products", [])
 
+    _flow("⚖️ ", "comparator_node", f"开始对比分析  商品={product_names}", "purple")
     if not retrieved_docs:
+        _flow("⚠️ ", "comparator_node", "无检索文档，跳过对比", "yellow")
         logger.warning("[comparator_node] 无检索文档，无法生成对比数据。")
         return {"comparison_data": None}
 
@@ -290,7 +323,7 @@ async def comparator_node(
         resp = await llm.chat_completion(
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
-            max_tokens=1024,
+            max_tokens=4096,
         )
         raw = resp.get("content", "").strip()
 
@@ -300,7 +333,9 @@ async def comparator_node(
                 raw = raw[4:]
 
         comparison_data = json.loads(raw)
-        logger.info(f"[comparator_node] 对比数据生成完成，维度数={len(comparison_data.get('dimensions', {}))}")
+        dims = len(comparison_data.get('dimensions', {}))
+        _flow("✅", "comparator_node", f"对比矩阵生成完成，{dims} 个维度", "purple")
+        logger.info(f"[comparator_node] 对比数据生成完成，维度数={dims}")
 
     except (json.JSONDecodeError, Exception) as exc:
         logger.error(f"[comparator_node] 对比数据生成失败: {exc}")
@@ -390,26 +425,29 @@ async def generator_node(
     ]
 
     final_response = "抱歉，我暂时无法生成回复，请稍后重试。"
+    _flow("✍️ ", "generator_node", f"调用 LLM 生成回复  intent={intent}  docs={len(retrieved_docs)}", "blue")
 
     try:
         llm  = get_llm_service()
         resp = await llm.chat_completion(
             messages=messages_for_llm,
             temperature=0.5,
-            max_tokens=1024,
+            max_tokens=4096,
         )
         final_response = resp.get("content", final_response).strip()
+        _flow("✅", "generator_node", f"回复生成完成  字数={len(final_response)}", "blue")
         logger.info(f"[generator_node] 回复生成完成，字数={len(final_response)}")
 
     except Exception as exc:
+        _flow("❌", "generator_node", f"LLM 调用失败: {exc}", "red")
         logger.error(f"[generator_node] LLM 调用失败: {exc}")
 
     # ── 置信度评估 ───────────────────────────────────────────────────────────
     confidence = _estimate_confidence(retrieved_docs)
-    # 无任何检索支撑的纯闲聊，置信度固定 0.9（不依赖文档）
     if intent == "chat" and not retrieved_docs:
         confidence = 0.9
 
+    _flow("📊", "generator_node", f"置信度={confidence:.2f}", "blue")
     logger.info(f"[generator_node] confidence_score={confidence}")
 
     return {
@@ -464,6 +502,7 @@ def human_review_node(
         if is_high_value:
             reason.append(f"高价值商品(预算={budget}元)")
 
+        _flow("🛑", "human_review_node", f"触发人工审核: {', '.join(reason)}", "red")
         logger.warning(f"[human_review_node] 触发人工审核: {', '.join(reason)}")
 
         try:
@@ -477,6 +516,6 @@ def human_review_node(
             # 降级：仅记录日志，继续执行
             logger.error("[human_review_node] NodeInterrupt 不可用，跳过拦截。请升级 langgraph>=0.2。")
 
+    _flow("✅", "human_review_node", "无需人工审核，透传 state", "gray")
     logger.info("[human_review_node] 无需人工审核，透传 state。")
-    # 不需要审核时返回空 dict，state 保持不变
     return {}

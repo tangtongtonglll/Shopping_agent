@@ -21,8 +21,8 @@ class LLMService:
         self.llm_provider = settings.llm_provider
 
         # 设置默认模型
-        self.text_model = getattr(settings, 'text_model', 'glm-4-0520')
-        self.vision_model = getattr(settings, 'vision_model', 'glm-4v')
+        self.text_model = getattr(settings, 'text_model', 'glm-4.7-flash')
+        self.vision_model = getattr(settings, 'vision_model', 'glm-4.6v-flash')
         self.max_tokens = getattr(settings, 'max_tokens', 4096)
         self.temperature = getattr(settings, 'temperature', 0.7)
         self.top_p = getattr(settings, 'top_p', 0.9)
@@ -198,12 +198,6 @@ class LLMService:
             if model.startswith("gpt-"):
                 model = self.text_model  # 使用配置的默认GLM模型
 
-            # 确保模型名称有效，如果无效则使用默认模型
-            valid_models = ["glm-4-0520", "glm-4-air", "glm-4", "glm-3-turbo", "glm-4-5", "glm-4-flash"]
-            if model not in valid_models:
-                # 使用配置的默认模型
-                model = self.text_model or "glm-4-0520"
-
             # 转换消息格式
             formatted_messages = []
             for msg in messages:
@@ -364,9 +358,8 @@ class LLMService:
             if model.startswith("gpt-4-vision"):
                 model = self.vision_model  # 使用配置的默认GLM-4.5V模型
 
-            # 确保模型名称有效
-            valid_vision_models = ["glm-4v", "glm-4v-plus"]
-            if model not in valid_vision_models:
+            # 如果模型名称是OpenAI的视觉模型格式，转换为BigModel格式
+            if model.startswith("gpt-4-vision") or model.startswith("gpt-4o"):
                 model = self.vision_model
 
             # 转换消息格式为BigModel支持的格式

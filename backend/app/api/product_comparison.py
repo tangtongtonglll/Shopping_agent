@@ -222,7 +222,7 @@ async def get_product_analysis(
             "success": True,
             "data": {
                 "product_id": product_id,
-                "product_name": product.name,
+                "product_name": product.title,
                 "basic_info": {
                     "price": product.price,
                     "brand": product.brand,
@@ -285,7 +285,7 @@ async def get_category_trends(
 
                 price_trends.append({
                     "product_id": product.product_id,
-                    "product_name": product.name,
+                    "product_name": product.title,
                     "brand": product.brand,
                     "start_price": start_price,
                     "end_price": end_price,

@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     bigmodel_base_url: str = "https://open.bigmodel.cn/api/paas/v4"  # 从环境变量 BIGMODEL_BASE_URL 读取
 
     # Model Configuration
-    text_model: str = "glm-4-0520"  # Default model for BigModel (GLM-4), can be overridden for Azure/OpenAI
-    vision_model: str = "glm-4v"  # Default vision model for BigModel
+    text_model: str = "GLM-4.6"  # Default model for BigModel, can be overridden for Azure/OpenAI
+    vision_model: str = "glm-4.6v"  # Default vision model for BigModel
     max_tokens: int = 4096
     temperature: float = 0.7
     top_p: float = 0.9

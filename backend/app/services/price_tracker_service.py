@@ -243,7 +243,7 @@ class PriceTrackerService:
         prompt = f"""
         为以下商品价格变化生成一个吸引人的提醒消息：
 
-        商品名称: {product.name}
+        商品名称: {product.title}
         品牌: {product.brand}
         原价: ¥{product.original_price:.2f}
         现价: ¥{current_price:.2f}
@@ -273,8 +273,8 @@ class PriceTrackerService:
         except:
             # 默认内容
             content_data = {
-                "title": f"🔥 {product.name} 价格提醒",
-                "description": f"{product.brand} {product.name} 价格有变！",
+                "title": f"🔥 {product.title} 价格提醒",
+                "description": f"{product.brand} {product.title} 价格有变！",
                 "price_info": f"原价: ¥{product.original_price:.2f} → 现价: ¥{current_price:.2f}",
                 "recommendation": reason,
                 "cta": "立即查看"
@@ -292,7 +292,7 @@ class PriceTrackerService:
         """发送邮件提醒"""
         # 这里需要配置邮件服务器
         # 目前模拟实现
-        logger.info(f"Email alert would be sent to {alert.user_id} for {product.name}")
+        logger.info(f"Email alert would be sent to {alert.user_id} for {product.title}")
 
     async def _send_sms_alert(self, alert: PriceAlert, content: Dict):
         """发送短信提醒"""
@@ -365,7 +365,7 @@ class PriceTrackerService:
             result.append({
                 "alert_id": alert.id,
                 "product_id": alert.product_id,
-                "product_name": product.name if product else "未知商品",
+                "product_name": product.title if product else "未知商品",
                 "target_price": alert.target_price,
                 "current_price": alert.current_price,
                 "alert_type": alert.alert_type,

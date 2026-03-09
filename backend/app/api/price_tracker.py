@@ -353,7 +353,7 @@ async def get_trending_price_changes(
                 if product:
                     trending_items.append({
                         "product_id": price_record.product_id,
-                        "product_name": product.name,
+                        "product_name": product.title,
                         "brand": product.brand,
                         "category": product.category,
                         "current_price": price_record.price,

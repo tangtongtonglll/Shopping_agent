@@ -221,7 +221,7 @@ async def get_file(filename: str):
 
     return FileResponse(file_path)
 
-@router.post("/chat/enhanced", response_model=EnhancedChatResponse)
+@router.post("/enhanced", response_model=EnhancedChatResponse)
 async def enhanced_chat(
     request: EnhancedChatRequest,
     db: Session = Depends(get_db)
@@ -288,7 +288,7 @@ async def enhanced_chat(
         logger.exception("[/chat/enhanced] LangGraph 执行异常")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/chat/extract-memory")
+@router.post("/extract-memory")
 async def extract_conversation_memory(
     conversation_id: int,
     user_id: Optional[int] = None,

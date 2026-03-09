@@ -31,6 +31,23 @@
       .replace(/"/g,'&quot;');
   }
 
+  // 简易 markdown → html（仅用于分析卡片内容）
+  function md(str) {
+    return esc(str)
+      // ## 标题
+      .replace(/^#{1,3}\s+(.+)$/gm, '<strong style="font-size:12px;display:block;margin:8px 0 2px">$1</strong>')
+      // **粗体**
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // *斜体*
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // - 列表项
+      .replace(/^[-•]\s+(.+)$/gm, '<span style="display:block;padding-left:10px;margin:2px 0">• $1</span>')
+      // 数字列表
+      .replace(/^\d+\.\s+(.+)$/gm, '<span style="display:block;padding-left:10px;margin:2px 0">$1</span>')
+      // 换行
+      .replace(/\n/g, '<br>');
+  }
+
   function errMsg(e) {
     if (!e) return '未知错误';
     if (typeof e === 'string') return e;
@@ -255,27 +272,29 @@
   }
 
   async function handleChatImage(file) {
-    // 图片快速预览 + 发到图搜接口
     const url = URL.createObjectURL(file);
-    const msg = `[发送了图片] ${file.name}`;
     appendMsg('user', `<img src="${url}" style="max-width:160px;border-radius:8px;margin-top:4px">`, null, true);
     showTyping(true);
     try {
       const res = await window.apiClient.visualSearch(file);
       showTyping(false);
-      const items = res.results || res.products || res.data || [];
+      const items = res.data?.similar_products || res.results || res.products || [];
       if (items.length) {
+        const desc = res.data?.image_description ? `<p style="font-size:12px;color:var(--text-2);margin:0 0 8px">🔍 图像识别：${esc(res.data.image_description.slice(0, 80))}…</p>` : '';
         const html = items.slice(0, 5).map(it => `<div class="visual-result-item">
-          ${it.image ? `<img class="visual-result-img" src="${esc(it.image)}" onerror="this.style.display='none'">` : ''}
+          ${it.image_url || it.image ? `<img class="visual-result-img" src="${esc(it.image_url || it.image)}" onerror="this.style.display='none'">` : ''}
           <div class="visual-result-info">
-            <div class="visual-result-name">${esc(it.name || it.title || '商品')}</div>
+            <div class="visual-result-name">${esc(it.title || it.name || '商品')}</div>
             <div class="visual-result-price">${fmtPrice(it.price, it.currency)}</div>
-            ${it.url ? `<a href="${esc(it.url)}" target="_blank">查看详情 →</a>` : ''}
+            ${it.product_url || it.url ? `<a href="${esc(it.product_url || it.url)}" target="_blank" style="font-size:11px;color:var(--primary)">查看详情 →</a>` : ''}
           </div>
         </div>`).join('');
-        appendMsg('assistant', `以下是相似商品：<div style="margin-top:8px">${html}</div>`, null, true);
+        appendMsg('assistant', `为您找到 ${items.length} 个相似商品：${desc}<div style="margin-top:8px">${html}</div>`, null, true);
       } else {
-        appendMsg('assistant', typeof res === 'string' ? res : JSON.stringify(res, null, 2));
+        const imgDesc = res.data?.image_description;
+        appendMsg('assistant', imgDesc
+          ? `已识别图像：${imgDesc}\n\n暂未找到相似商品，数据库中可能没有匹配的美妆产品，请尝试其他图片。`
+          : '未找到相似商品，请尝试其他图片。');
       }
     } catch (e) {
       showTyping(false);
@@ -391,7 +410,7 @@
     if (info.comprehensive_analysis || info.analysis) {
       parts.push(`<div class="a-card">
         <div class="a-card-hdr">📋 综合评估</div>
-        <div class="a-card-body">${esc(info.comprehensive_analysis || info.analysis).replace(/\n/g,'<br>')}</div>
+        <div class="a-card-body" style="font-size:12px;line-height:1.7">${md(info.comprehensive_analysis || info.analysis)}</div>
       </div>`);
     }
 
@@ -554,41 +573,9 @@
   }
 
   async function loadPriceHistory() {
+    // 历史价格功能暂未接入数据，隐藏此板块
     const block = document.getElementById('historyBlock');
-    if (!currentProduct?.productId) { block.style.display = 'none'; return; }
-    block.style.display = '';
-
-    const out = document.getElementById('priceHistoryResult');
-    out.innerHTML = `<div class="empty-state-sm">加载中…</div>`;
-
-    try {
-      const res   = await window.apiClient.getPriceHistory(currentProduct.productId, 30);
-      const items = res.history || res.data || res;
-
-      if (!Array.isArray(items) || !items.length) {
-        out.innerHTML = `<div class="empty-state-sm">暂无历史数据</div>`;
-        return;
-      }
-
-      const rows = items.slice(0, 15).map((h, i) => {
-        const prev = i < items.length - 1 ? items[i + 1].price : h.price;
-        const diff = parseFloat(h.price) - parseFloat(prev);
-        const cls  = diff > 0 ? 'price-up' : diff < 0 ? 'price-down' : '';
-        const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '—';
-        return `<tr>
-          <td>${esc(h.date || h.timestamp || '')}</td>
-          <td class="${cls}">${fmtPrice(h.price, currentProduct.currency)}</td>
-          <td class="${cls}">${arrow} ${diff !== 0 ? Math.abs(diff).toFixed(2) : ''}</td>
-        </tr>`;
-      }).join('');
-
-      out.innerHTML = `<table class="history-table">
-        <thead><tr><th>日期</th><th>价格</th><th>变动</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-    } catch (e) {
-      out.innerHTML = `<div class="empty-state-sm">加载失败：${esc(errMsg(e))}</div>`;
-    }
+    if (block) block.style.display = 'none';
   }
 
   async function runSetAlert() {
@@ -653,16 +640,16 @@
 
       try {
         const res   = await window.apiClient.visualSearch(selectedFile);
-        const items = res.results || res.products || res.data || [];
+        const items = res.data?.similar_products || res.results || res.products || [];
 
         if (items.length) {
           out.innerHTML = `<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">找到 ${items.length} 个相似商品：</div>` +
             items.slice(0, 10).map(it => `<div class="visual-result-item">
-              ${it.image ? `<img class="visual-result-img" src="${esc(it.image)}" onerror="this.style.display='none'">` : ''}
+              ${it.image_url || it.image ? `<img class="visual-result-img" src="${esc(it.image_url || it.image)}" onerror="this.style.display='none'">` : ''}
               <div class="visual-result-info">
-                <div class="visual-result-name">${esc(it.name || it.title || '商品')}</div>
+                <div class="visual-result-name">${esc(it.title || it.name || '商品')}</div>
                 <div class="visual-result-price">${fmtPrice(it.price, it.currency)}</div>
-                ${it.url ? `<a href="${esc(it.url)}" target="_blank">查看详情 →</a>` : ''}
+                ${it.product_url || it.url ? `<a href="${esc(it.product_url || it.url)}" target="_blank">查看详情 →</a>` : ''}
               </div>
             </div>`).join('');
         } else {

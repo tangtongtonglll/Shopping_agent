@@ -475,7 +475,7 @@ class ProductComparisonService:
             scores = weighted_scores[product_id]
 
             text += f"""
-产品: {product.name} ({product.brand})
+产品: {product.title} ({product.brand})
 价格: ¥{product.price}
 评分: {scores['weighted_total']}/100
 规格: {data['specifications']}
@@ -509,7 +509,7 @@ class ProductComparisonService:
             recommendation = {
                 "rank": i + 1,
                 "product_id": product_id,
-                "product_name": product.name,
+                "product_name": product.title,
                 "total_score": scores['weighted_total'],
                 "match_percentage": min(100, scores['weighted_total']),
                 "key_reasons": [],

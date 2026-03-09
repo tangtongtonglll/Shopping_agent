@@ -206,7 +206,7 @@ class UserBehaviorTracker:
                 purchase_history = preference.purchase_history or []
                 purchase_history.append({
                     "product_id": product_id,
-                    "product_name": product.name,
+                    "product_name": product.title,
                     "brand": product.brand,
                     "category": product.category,
                     "price": price or product.price,

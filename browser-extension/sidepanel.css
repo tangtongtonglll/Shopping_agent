@@ -401,7 +401,9 @@ ul { padding-left: 1.2em; }
 }
 #analysisResult {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -497,6 +499,8 @@ ul { padding-left: 1.2em; }
 ═══════════════════════════════════════════════════════════════ */
 #pane-price {
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
   flex-direction: column;
   gap: 0;
 }
@@ -542,6 +546,13 @@ ul { padding-left: 1.2em; }
 .chevron.open { transform: rotate(180deg); }
 
 #comparisonResult, #priceHistoryResult, #alertResult { padding: 0 12px 10px; }
+#comparisonResult {
+  max-height: 300px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#comparisonResult::-webkit-scrollbar { width: 4px; }
+#comparisonResult::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 /* Platform price card */
 .platform-group { margin-bottom: 10px; }
@@ -651,7 +662,14 @@ ul { padding-left: 1.2em; }
   box-shadow: var(--shadow-md);
 }
 .preview-actions { display: flex; gap: 8px; }
-#visualResult { padding: 0 12px 12px; }
+#visualResult {
+  padding: 0 12px 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#visualResult::-webkit-scrollbar { width: 4px; }
+#visualResult::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 /* Visual search result items */
 .visual-result-item {
